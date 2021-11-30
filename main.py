@@ -30,10 +30,10 @@ class Produto(BaseModel):
     categoria:Categoria
     preco: float
     quantidade: int
+    vendedores: List[str]
 
 class ProdutoUpdateDTO(BaseModel):
     nome:str
-    categoria: Categoria
     preco: float
     quantidade: float
 
@@ -95,6 +95,8 @@ def altera_compradores(cpf: str, comprador_update_dto: CompradorUpdateDTO):
 
 @app.post('/fornecedores', status_code=status.HTTP_201_CREATED)
 def cadastras_fornecedores(fornecedor: Fornecedor = Body(...)):
+    fornecedor.itens_a_venda = []
+    fornecedor.valor_vendido = 0
     fornecedores.append(fornecedor)
 
 @app.get('/fornecedores')
@@ -190,7 +192,6 @@ def atualiza_produto(id: str, produto_update_dto : ProdutoUpdateDTO = Body(...))
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'Não existe produto com o id {id}')
     i,_ = resultado[0]
     produtos[i].nome = produto_update_dto.nome
-    produtos[i].categoria = produto_update_dto.categoria
     produtos[i].preco = produto_update_dto.preco
     produtos[i].quantidade = produto_update_dto.quantidade
     return produtos[i]
@@ -204,3 +205,14 @@ def atualiza_quantidade_produto(id: str, quantidade: int = Body(...)):
     produtos[i].quantidade = quantidade
     return f'Quantidade atual: {produtos[i].quantidade}'
     
+@app.put('/produtos/{id_produto}/fornecedor/{cnpj_fornecedor}')
+def associa_produto_fornecedor(id_produto:str, cnpj_fornecedor:str):
+    fornecedor = list(filter(lambda a:a[1].cnpj == cnpj_fornecedor, enumerate(fornecedores)))
+    produto = list(filter(lambda a:a[1].id == id_produto, enumerate(produtos)))
+    if not fornecedor:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'Não existe um vendedor com o cnpj {cnpj_fornecedor}')
+    if not produto:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'Não existe um produto com o id {id_produto}')
+    posicao_fornecedor,_  = fornecedor[0]
+    posicao_produto,_ = produto[0]
+    fornecedores[posicao_fornecedor].itens_a_venda.append(produtos[posicao_produto])
