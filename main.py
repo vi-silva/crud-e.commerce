@@ -1,3 +1,4 @@
+from typing import List
 from fastapi import FastAPI, status
 from fastapi.params import Body, Header
 from pydantic import BaseModel
@@ -25,7 +26,12 @@ class Produto(BaseModel):
 class Fornecedor(BaseModel):
     nome: str
     cnpj: str
-    itens_a_venda: int
+    itens_a_venda: List[Produto]
+    valor_vendido: float
+
+class FornecedorUpdateDTO(BaseModel):
+    nome:str
+    itens_a_venda: List[Produto]
     valor_vendido: float
 
 class Comprador(BaseModel):
@@ -72,3 +78,39 @@ def altera_compradores(cpf: str, comprador_update_dto: CompradorUpdateDTO):
     compradores[i].valor_comprado = comprador_update_dto.valor_comprado
     compradores[i].endereco = comprador_update_dto.endereco
     return compradores[i]
+
+@app.post('/fornecedores', status_code=status.HTTP_201_CREATED)
+def cadastras_fornecedores(fornecedor: Fornecedor = Body(...)):
+    fornecedores.append(fornecedor)
+
+@app.get('/fornecedores')
+def busca_fornecedores():
+    return fornecedores
+
+@app.get('/fornecedores/{cnpj}')
+def busca_fornecedores_cnpj(cnpj:str):
+    resultado = list(filter(lambda a: a.cnpj == cnpj, fornecedores))
+    if not resultado:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'Não existe fornecedor com o cnpj {cnpj}')
+    return resultado[0]
+
+@app.delete('/fornecedores/{cnpj}')
+def deleta_compradores(cnpj: str):
+    resultado = list(filter(lambda a: a[1].cnpj == cnpj, enumerate(compradores)))
+    if not resultado:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'Não existe fornecedor com o cnpj {cnpj}')
+    i, _ = resultado[0]
+    del fornecedores[i]
+
+@app.put('/fonecedores/{cnpj}')
+def altera_fornecedores(cnpj: str, fornecedor_update_dto: FornecedorUpdateDTO = Body(...)):
+    resultado = list(filter(lambda a: a[1].cnpj == cnpj, enumerate(fornecedores)))
+    if not resultado:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'Não existe fornecedor com o cnpj {cnpj}')
+    i, _ = resultado[0]
+    fornecedores[i].nome = fornecedor_update_dto.nome
+    fornecedores[i].itens_a_venda = fornecedor_update_dto.itens_a_venda
+    fornecedores[i].valor_vendido = fornecedor_update_dto.valor_vendido
+    return fornecedores[i]
+
+    
