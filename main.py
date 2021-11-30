@@ -5,7 +5,6 @@ from pydantic import BaseModel
 from starlette.responses import Response
 from fastapi.exceptions import HTTPException
 
-
 app = FastAPI()
 
 produtos = []
@@ -14,7 +13,12 @@ fornecedores = []
 compradores = []
 
 class Categoria(BaseModel):
+    id: str
     nome: str
+    caracteristicas: str
+
+class CategoriaUpdateDTO(BaseModel):
+    nome:str
     caracteristicas: str
 
 class Produto(BaseModel):
@@ -113,4 +117,37 @@ def altera_fornecedores(cnpj: str, fornecedor_update_dto: FornecedorUpdateDTO = 
     fornecedores[i].valor_vendido = fornecedor_update_dto.valor_vendido
     return fornecedores[i]
 
+@app.get('/categorias')
+def busca_categorias():
+    return categorias
+
+@app.post('/categoria')
+def cadastrar_categoria(categoria: Categoria = Body(...)):
+    categorias.append(categoria)
+
+@app.get('/categorias/{id}')
+def busca_categorias(id: str):
+    resultado = list(filter(lambda a:a.id == id, categorias))
+    if not resultado:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'Não existe categoria com o id {id}')
+    return resultado[0]
+
+@app.delete('/categorias/{id}')
+def deleta_categorias(id: str):
+    resultado = list(filter(lambda a:a[1].id == id, enumerate(categorias)))
+    if not resultado:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'Não existe categoria com o id {id}')
+    i,_ = resultado[0]
+    del categorias[i]
+
+@app.put('/categorias/{id}')
+def altera_categoria(id: str, categoria_update_dto : CategoriaUpdateDTO = Body(...)):
+    resultado = list(filter(lambda a:a[1].id == id, enumerate(categorias)))
+    if not resultado:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'Não existe categoria com o id {id}')
+    i,_ = resultado[0]
+    categorias[i].nome = categoria_update_dto.nome
+    categorias[i].caracteristicas = categoria_update_dto.caracteristicas
+    return categorias[i]
     
+        
