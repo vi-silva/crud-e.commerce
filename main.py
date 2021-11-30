@@ -5,6 +5,8 @@ from pydantic import BaseModel
 from starlette.responses import Response
 from fastapi.exceptions import HTTPException
 
+#TODO: associacoes entre classes
+
 app = FastAPI()
 
 produtos = []
@@ -22,10 +24,17 @@ class CategoriaUpdateDTO(BaseModel):
     caracteristicas: str
 
 class Produto(BaseModel):
+    id: str
     nome: str
     categoria:Categoria
-    preço: float
+    preco: float
     quantidade: int
+
+class ProdutoUpdateDTO(BaseModel):
+    nome:str
+    categoria: Categoria
+    preco: float
+    quantidade: float
 
 class Fornecedor(BaseModel):
     nome: str
@@ -53,7 +62,7 @@ class CompradorUpdateDTO(BaseModel):
 def cadastrar_compradores(comprador: Comprador = Body(...)):
     compradores.append(comprador)
 
-@app.get('/compradores', status_code = status.HTTP_200_OK)
+@app.get('/compradores')
 def busca_compradores():
     return compradores
 
@@ -121,7 +130,7 @@ def altera_fornecedores(cnpj: str, fornecedor_update_dto: FornecedorUpdateDTO = 
 def busca_categorias():
     return categorias
 
-@app.post('/categoria')
+@app.post('/categoria', status_code=status.HTTP_201_CREATED)
 def cadastrar_categoria(categoria: Categoria = Body(...)):
     categorias.append(categoria)
 
@@ -149,5 +158,48 @@ def altera_categoria(id: str, categoria_update_dto : CategoriaUpdateDTO = Body(.
     categorias[i].nome = categoria_update_dto.nome
     categorias[i].caracteristicas = categoria_update_dto.caracteristicas
     return categorias[i]
+
+@app.get('/produtos')
+def busca_produtos():
+    return produtos
+
+@app.post('/produtos', status_code=status.HTTP_201_CREATED)
+def cadastrar_produtos(produto: Produto = Body(...)):
+    produtos.append(produto)
+
+@app.get('/produtos/{id}')
+def busca_produtos_id(id:str):
+    resultado = list(filter(lambda a:a.id == id, produtos))
+    if not resultado:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'Não existe produto com o id {id}')
+    return resultado[0]
+
+@app.delete('/produtos/{id}')
+def deleta_produto(id:str):
+    resultado = list(filter(lambda a:a[1].id == id, enumerate(produtos)))
+    if not resultado:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'Não existe produto com o id {id}')
+    i,_ = resultado[0]
+    del produtos[i]
+
+@app.put('/produtos/{id}')
+def atualiza_produto(id: str, produto_update_dto : ProdutoUpdateDTO = Body(...)):
+    resultado = list(filter(lambda a:a[1].id == id, enumerate(produtos)))
+    if not resultado:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'Não existe produto com o id {id}')
+    i,_ = resultado[0]
+    produtos[i].nome = produto_update_dto.nome
+    produtos[i].categoria = produto_update_dto.categoria
+    produtos[i].preco = produto_update_dto.preco
+    produtos[i].quantidade = produto_update_dto.quantidade
+    return produtos[i]
+
+@app.patch('/produtos/{id}')
+def atualiza_quantidade_produto(id: str, quantidade: int = Body(...)):
+    resultado = list(filter(lambda a:a[1].id == id, enumerate(produtos)))
+    if not resultado:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'Não existe produto com o id {id}')
+    i,_ = resultado[0]
+    produtos[i].quantidade = quantidade
+    return f'Quantidade atual: {produtos[i].quantidade}'
     
-        
