@@ -6,6 +6,7 @@ from starlette.responses import Response
 from fastapi.exceptions import HTTPException
 
 #TODO: associacoes entre classes
+#Adicionar tratamento de entrada
 
 app = FastAPI()
 
